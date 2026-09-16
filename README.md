@@ -1,5 +1,8 @@
 # trajectorycheck
 
+[![CI](https://github.com/sushant-me/trajectorycheck/actions/workflows/ci.yml/badge.svg)](https://github.com/sushant-me/trajectorycheck/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.9%20%7C%203.11%20%7C%203.13-blue)](https://github.com/sushant-me/trajectorycheck/actions/workflows/ci.yml)
+
 Trajectory-level evaluation for AI agents. It grades **behavior** — the tools an
 agent calls, the arguments it passes, the side effects it causes, and whether it
 behaves the same across runs — instead of just the final answer.
