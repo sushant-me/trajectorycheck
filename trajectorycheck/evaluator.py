@@ -34,12 +34,29 @@ class Report:
                 counts[t] = counts.get(t, 0) + 1
         return counts
 
+    def _signature(self, trace: Trace) -> tuple:
+        """Canonical, order-sensitive behaviour signature of one run."""
+        return tuple(
+            (s.tool, tuple(sorted(s.args.items()))) for s in trace.steps
+        )
+
+    @property
+    def non_deterministic(self) -> bool:
+        """True if the agent produced >1 distinct behaviour across runs."""
+        return len({self._signature(r.trace) for r in self.results}) > 1
+
+    @property
+    def distinct_behaviors(self) -> int:
+        return len({self._signature(r.trace) for r in self.results})
+
     def to_dict(self) -> dict:
         return {
             "task": self.task,
             "runs": self.runs,
             "passed": self.passed,
             "pass_rate": round(self.passed / self.runs, 3) if self.runs else 0.0,
+            "non_deterministic": self.non_deterministic,
+            "distinct_behaviors": self.distinct_behaviors,
             "failure_counts": self.failure_counts,
             "results": [
                 {"run": r.run, "tags": r.tags, "trace": r.trace.to_dict()}
