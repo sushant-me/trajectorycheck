@@ -50,6 +50,18 @@ The bundled demo agent is *deliberately* broken ~45% of the time (wrong tool,
 bad argument, or injected-instruction) — the evaluator flags each failure mode.
 Run the tests with `python -m pytest tests/`.
 
+## Adapters (real agents)
+
+`trajectorycheck.adapters.make_openai_agent(client, model, tool_executor, tools=...)`
+wraps an OpenAI function-calling loop into a trajectory-capturing agent — pass any
+OpenAI SDK client or OpenAI-compatible endpoint (no hard dependency on `openai`).
+
+```python
+from trajectorycheck.adapters import make_openai_agent
+agent = make_openai_agent(openai_client, "gpt-4o", {"send": send_fn}, tools=tool_schemas)
+report = TrajectoryEvaluator(runs=10).evaluate(agent, "send a support message", spec)
+```
+
 ## Roadmap
 
 - Real adapters for OpenAI function-calling and LangChain tool agents.
