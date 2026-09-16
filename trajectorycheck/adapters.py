@@ -14,6 +14,24 @@ from .trace import Step, Trace
 ToolExecutor = dict[str, Callable[..., Any]]
 
 
+def tool_result_content(result: Any) -> str:
+    """Serialise a tool result for the wire without ever raising.
+
+    The chat API only accepts a string for a tool message, but a tool may return
+    anything - a `datetime`, a dataclass, a set, an ORM row, a client object.
+    `json.dumps` raises `TypeError` on all of those, and that exception used to
+    escape `agent(task)` and abort the whole evaluation.
+
+    An evaluator exists to observe an agent and score what it did; it must not be
+    the thing that crashes on an ordinary return value. Falling back to `str`
+    keeps the loop alive and keeps the trajectory scoreable.
+    """
+    try:
+        return json.dumps(result)
+    except (TypeError, ValueError):
+        return json.dumps(str(result))
+
+
 def make_openai_agent(
     client,
     model: str,
@@ -62,7 +80,7 @@ def make_openai_agent(
                 trace.steps.append(Step(name, args, result, ok=ok))
                 messages.append({
                     "role": "tool", "tool_call_id": tc.id,
-                    "content": json.dumps(result),
+                    "content": tool_result_content(result),
                 })
         return trace
 

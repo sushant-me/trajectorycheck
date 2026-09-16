@@ -5,4 +5,4 @@ than the final answer, to catch the "looks perfect but is broken" failures
 that answer-level evals miss.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"

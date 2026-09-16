@@ -72,3 +72,64 @@ def test_adapter_flags_bad_arg():
                 allowed_args={"send": {"to": {"support@bank"}}})
     report = TrajectoryEvaluator(runs=2).evaluate(agent, "send a message", spec)
     assert report.failure_counts.get("bad_arg", 0) == 2
+
+
+# --- tool results that are not JSON-serialisable ---------------------------
+#
+# The executor above returns an f-string, so nothing in this file exercised a
+# tool returning an ordinary object. That is the gap: `json.dumps(result)` sits
+# outside the tool's try/except, so a `datetime` or a set raised `TypeError` out
+# of `agent(task)` and aborted the whole evaluation.
+
+class _RaisingFreeClient(_Client):
+    """Same stub, but the loop ends after the tool call so one step is recorded."""
+    def __init__(self, tool_name, tool_args):
+        super().__init__(tool_name, tool_args)
+        self._calls = 0
+
+    def create(self, **kwargs):
+        self._calls += 1
+        if self._calls == 1:
+            return _Resp(_Msg(tool_calls=[_TC("tc", self.tool_name, self.tool_args)]))
+        return _Resp(_Msg(content="done"))
+
+
+def _agent_returning(value):
+    return make_openai_agent(
+        _RaisingFreeClient("emit", {}), "gpt-test", {"emit": lambda: value}
+    )
+
+
+def test_non_serialisable_tool_result_does_not_abort_the_run():
+    import datetime
+
+    trace = _agent_returning(datetime.datetime(2026, 9, 17, 2, 38))("t")
+    assert [s.tool for s in trace.steps] == ["emit"]
+    assert trace.steps[0].ok is True
+
+
+def test_a_set_and_a_bare_object_are_also_survivable():
+    assert _agent_returning({1, 2, 3})("t").steps[0].ok is True
+    assert _agent_returning(object())("t").steps[0].ok is True
+
+
+def test_serialisable_results_are_unchanged():
+    """The fallback must not alter the common path."""
+    from trajectorycheck.adapters import tool_result_content
+
+    assert tool_result_content({"a": 1}) == json.dumps({"a": 1})
+    assert tool_result_content("x") == json.dumps("x")
+    assert tool_result_content(3) == "3"
+
+
+def test_a_failing_tool_is_still_marked_bad():
+    """`ok=False` belongs to the tool failing, not to serialisation."""
+    def boom():
+        raise ValueError("nope")
+
+    agent = make_openai_agent(
+        _RaisingFreeClient("emit", {}), "gpt-test", {"emit": boom}
+    )
+    trace = agent("t")
+    assert trace.steps[0].ok is False
+    assert "nope" in str(trace.steps[0].result)
