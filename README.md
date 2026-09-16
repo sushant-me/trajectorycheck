@@ -57,6 +57,31 @@ trajectorycheck run --runs 100
 
 The bundled demo agent is *deliberately* broken ~45% of the time (wrong tool,
 bad argument, or injected-instruction) — the evaluator flags each failure mode.
+
+**That command exits `1`, and that is correct.** The exit status is a gate, and
+the gate is strict by default: every run must pass. Because the demo is designed
+to fail, running it is expected to fail. Say what tolerance you actually want
+with `--min-pass-rate`:
+
+```bash
+trajectorycheck run --runs 100 --min-pass-rate 0.4
+```
+
+The demo's true pass rate is about 0.55, so a threshold below it will hold: 0.4
+is stable across runs, while 0.5 sits close enough to the mean that it flips
+depending on the draw. (Thresholds that flip are worth noticing — a gate whose
+verdict depends on luck is not measuring the thing you think it is.)
+
+| exit | meaning |
+|---|---|
+| `0` | the run cleared the threshold |
+| `1` | the run did not clear the threshold |
+| `2` | usage error, e.g. an out-of-range `--min-pass-rate` |
+
+The default is strict on purpose. A gate that succeeds unless you tell it
+otherwise is one nobody notices is switched off, and this package exists to
+catch things that look fine.
+
 Run the tests with `python -m pytest tests/`.
 
 ## Adapters (real agents)
@@ -75,16 +100,15 @@ report = TrajectoryEvaluator(runs=10).evaluate(agent, "send a support message", 
 
 - Adapters for LangChain and other tool-calling frameworks. The OpenAI
   function-calling adapter is not future work — it is implemented above.
-- A configurable CI threshold. The CLI already prints JSON and exits `1` when any
-  run fails; what is missing is `--min-pass-rate` so a build can be gated on
-  something other than "all runs clean".
 - An injection-resistance battery — a corpus of planted instructions. Detection
   ships today (the `injected` tag, driven by `Spec.injected_instruction`); the
   corpus does not.
 
-Cross-run **determinism scoring is already implemented** and reported per run:
-`Report.non_deterministic` and `Report.distinct_behaviors` compare behaviour
-signatures across runs. It appears here only because this section previously
-described it as pending, after the code had shipped.
+Two items that used to be listed here have shipped. Cross-run **determinism
+scoring** is implemented and reported per run (`Report.non_deterministic`,
+`Report.distinct_behaviors`), and a **configurable CI threshold** now exists as
+`--min-pass-rate`. Both were described as pending after the code had moved on;
+this section is not a reliable source of truth about what is missing, and the
+exit-code table above is.
 
 MIT.

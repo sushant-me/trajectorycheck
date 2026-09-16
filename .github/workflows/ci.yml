@@ -27,5 +27,23 @@ jobs:
         run: python -m pip install --upgrade pip && pip install -e . pytest
       - name: Test
         run: python -m pytest tests/ -q
-      - name: CLI smoke test
-        run: trajectorycheck --help
+      - name: CLI contract
+        # `--help` only proved the module imports; it could not fail on any
+        # regression in behaviour. These assert the exit statuses the README
+        # documents, end to end, through the installed console script.
+        run: |
+          trajectorycheck --version
+          # The bundled demo is deliberately broken, so the strict default gate
+          # must fail it. 200 runs makes an accidental all-pass run
+          # astronomically unlikely (0.55^200), and the demo agent is pure
+          # Python so this stays fast.
+          if trajectorycheck run --runs 200 > /dev/null; then
+            echo "expected a non-zero exit from the strict default gate"; exit 1
+          fi
+          # An explicit zero threshold must accept the same run.
+          trajectorycheck run --runs 10 --min-pass-rate 0.0 > /dev/null
+          # An out-of-range threshold is a usage error, not a silent pass.
+          if trajectorycheck run --min-pass-rate 1.5 2>/dev/null; then
+            echo "expected a usage error for an out-of-range threshold"; exit 1
+          fi
+          echo "exit codes: ok"
