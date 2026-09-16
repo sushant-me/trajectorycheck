@@ -27,6 +27,11 @@ Failure taxonomy (one tag per detected problem):
 - `bad_result` — a step failed
 - `injected` — followed a planted prompt-injection instruction
 
+On top of the per-run tags, the report scores **behavioural consistency** across
+runs: `non_deterministic` and `distinct_behaviors` compare a canonical signature
+of every run's tool calls and arguments, so an agent that passes on average while
+behaving differently each time is visible rather than averaged away.
+
 ## Usage
 
 ```python
@@ -35,7 +40,8 @@ from trajectorycheck.rubric import Spec
 
 evaluator = TrajectoryEvaluator(runs=10)
 report = evaluator.evaluate(your_agent, "send a support message", spec)
-print(report.to_dict())          # pass_rate, failure_counts, per-run tags
+print(report.to_dict())          # pass_rate, failure_counts, non_deterministic,
+                                 # distinct_behaviors, per-run tags
 ```
 
 An agent is just a function `agent(task: str) -> Trace` that returns the steps
@@ -67,9 +73,18 @@ report = TrajectoryEvaluator(runs=10).evaluate(agent, "send a support message", 
 
 ## Roadmap
 
-- Real adapters for OpenAI function-calling and LangChain tool agents.
-- Determinism scoring (cross-run variance).
-- JSON report → CI gate (fail a build when pass_rate < threshold).
-- Injection-resistance battery (a corpus of planted instructions).
+- Adapters for LangChain and other tool-calling frameworks. The OpenAI
+  function-calling adapter is not future work — it is implemented above.
+- A configurable CI threshold. The CLI already prints JSON and exits `1` when any
+  run fails; what is missing is `--min-pass-rate` so a build can be gated on
+  something other than "all runs clean".
+- An injection-resistance battery — a corpus of planted instructions. Detection
+  ships today (the `injected` tag, driven by `Spec.injected_instruction`); the
+  corpus does not.
+
+Cross-run **determinism scoring is already implemented** and reported per run:
+`Report.non_deterministic` and `Report.distinct_behaviors` compare behaviour
+signatures across runs. It appears here only because this section previously
+described it as pending, after the code had shipped.
 
 MIT.
