@@ -55,8 +55,11 @@ pip install -e .
 trajectorycheck run --runs 100
 ```
 
-The bundled demo agent is *deliberately* broken ~45% of the time (wrong tool,
-bad argument, or injected-instruction) — the evaluator flags each failure mode.
+The bundled demo agent is *deliberately* broken ~45% of the time, across all
+five failure modes the taxonomy can report from it — wrong tool, bad argument,
+an unauthorised side effect via a planted injection, no action at all, and a
+step that failed. A test pins that every tag fires, because one that no demo
+reaches is one that can rot unnoticed.
 
 **That command exits `1`, and that is correct.** The exit status is a gate, and
 the gate is strict by default: every run must pass. Because the demo is designed

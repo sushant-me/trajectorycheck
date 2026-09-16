@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trajectorycheck"
-version = "0.1.1"
+version = "0.1.2"
 description = "Trajectory-level evaluation for AI agents — grades tool calls, arguments, side effects, and determinism, not just the final answer."
 readme = "README.md"
 requires-python = ">=3.9"
