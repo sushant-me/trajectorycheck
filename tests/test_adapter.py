@@ -4,7 +4,8 @@ import json
 
 from trajectorycheck.adapters import make_openai_agent
 from trajectorycheck.evaluator import TrajectoryEvaluator
-from trajectorycheck.rubric import Spec
+from trajectorycheck.rubric import Spec, score_trace
+from trajectorycheck.trace import Step, Trace
 
 
 class _Msg:
@@ -133,3 +134,47 @@ def test_a_failing_tool_is_still_marked_bad():
     trace = agent("t")
     assert trace.steps[0].ok is False
     assert "nope" in str(trace.steps[0].result)
+
+
+# --- tool arguments are routinely lists and objects -------------------------
+#
+# Signatures are collected into a set, so a list- or dict-valued argument made
+# the tuple unhashable and `non_deterministic` raised TypeError. The same value
+# broke the allowed-argument membership test, which needs a hashable operand.
+# Both are ordinary: any JSON-schema tool takes arrays.
+
+def test_determinism_survives_list_and_object_arguments():
+    for arg in (["a@b.c", "d@e.f"], {"kind": "urgent", "cc": ["x@y.z"]}, [1, 2, 3]):
+        def agent(task, arg=arg):
+            return Trace(task=task, steps=[Step("send", {"to": arg}, "sent")])
+
+        spec = Spec(allowed_tools={"send"}, dangerous_allowed={"send"})
+        report = TrajectoryEvaluator(runs=3).evaluate(agent, "send", spec)
+        assert report.non_deterministic is False
+        assert report.distinct_behaviors == 1
+        assert report.to_dict()["runs"] == 3
+
+
+def test_allowed_argument_check_survives_a_list_value():
+    """The membership test must not raise when the actual value is unhashable."""
+    t = Trace(task="x", steps=[Step("send", {"to": ["a@b.c"]}, "ok")])
+    spec = Spec(allowed_tools={"send"},
+                allowed_args={"send": {"to": {"a@b.c"}}},
+                dangerous_allowed={"send"})
+    # A list is not equal to the allowed scalar, so it is a bad argument - and
+    # the scorer has to be able to say so rather than raise.
+    assert "bad_arg" in score_trace(t, spec)
+
+
+def test_determinism_still_detects_a_real_difference():
+    """Guarding the crash must not flatten the signature."""
+    calls = iter([{"to": "a@b.c"}, {"to": "d@e.f"}])
+
+    def agent(task):
+        arg = next(calls)
+        return Trace(task=task, steps=[Step("send", arg, "sent")])
+
+    spec = Spec(allowed_tools={"send"}, dangerous_allowed={"send"})
+    report = TrajectoryEvaluator(runs=2).evaluate(agent, "send", spec)
+    assert report.non_deterministic is True
+    assert report.distinct_behaviors == 2

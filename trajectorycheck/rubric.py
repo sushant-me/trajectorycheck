@@ -60,7 +60,22 @@ def score_trace(trace: Trace, spec: Spec) -> list[str]:
         allowed = spec.allowed_args.get(step.tool)
         if allowed is not None:
             for key, value in step.args.items():
-                if key in allowed and value not in allowed[key]:
+                if key not in allowed:
+                    continue
+                allowed_values = allowed[key]
+                if isinstance(allowed_values, (set, frozenset)):
+                    # A set membership test needs a hashable value, and tool
+                    # arguments are routinely lists or objects - a recipient
+                    # list, a filter, a nested config. Comparing against each
+                    # allowed value keeps the check working for those instead of
+                    # raising TypeError out of the scorer.
+                    try:
+                        bad = value not in allowed_values
+                    except TypeError:
+                        bad = not any(value == candidate for candidate in allowed_values)
+                else:
+                    bad = value not in allowed_values
+                if bad:
                     tags.append("bad_arg")
                     break
 

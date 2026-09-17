@@ -35,9 +35,19 @@ class Report:
         return counts
 
     def _signature(self, trace: Trace) -> tuple:
-        """Canonical, order-sensitive behaviour signature of one run."""
+        """Canonical, order-sensitive behaviour signature of one run.
+
+        Values are reduced to a hashable form first. Signatures are collected
+        into a set, and a tool argument that is a list or an object - which is
+        most of them, for any JSON-schema tool - made the tuple unhashable and
+        raised `TypeError: unhashable type` out of `non_deterministic`.
+        """
         return tuple(
-            (s.tool, tuple(sorted(s.args.items()))) for s in trace.steps
+            (s.tool, tuple(sorted(
+                ((k, _canonical(v)) for k, v in s.args.items()),
+                key=lambda item: item[0],
+            )))
+            for s in trace.steps
         )
 
     @property
@@ -63,6 +73,26 @@ class Report:
                 for r in self.results
             ],
         }
+
+
+def _canonical(value: Any) -> Any:
+    """A hashable, order-insensitive stand-in for a tool-argument value.
+
+    Lists and tuples become tuples, mappings become sorted key/value tuples, and
+    sets are sorted by their repr so mixed element types compare without a
+    `TypeError`. Anything already hashable is returned unchanged, so signatures
+    of the common case (string and number arguments) are what they always were.
+    """
+    if isinstance(value, dict):
+        return tuple(sorted(
+            ((k, _canonical(v)) for k, v in value.items()),
+            key=lambda item: item[0],
+        ))
+    if isinstance(value, (list, tuple)):
+        return tuple(_canonical(v) for v in value)
+    if isinstance(value, (set, frozenset)):
+        return tuple(sorted((_canonical(v) for v in value), key=repr))
+    return value
 
 
 class TrajectoryEvaluator:
