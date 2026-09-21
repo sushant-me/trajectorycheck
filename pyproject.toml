@@ -9,6 +9,20 @@ description = "Trajectory-level evaluation for AI agents — grades tool calls, 
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
+authors = [{ name = "Sushant Poudel", email = "sushant.poudel2028@gmail.com" }]
+keywords = ["ai-agents", "evaluation", "trajectory", "tool-calls", "llm", "testing"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/sushant-me/trajectorycheck"
+Repository = "https://github.com/sushant-me/trajectorycheck"
+Issues = "https://github.com/sushant-me/trajectorycheck/issues"
 
 [project.scripts]
 trajectorycheck = "trajectorycheck.cli:main"
