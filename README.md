@@ -55,11 +55,14 @@ pip install -e .
 trajectorycheck run --runs 100
 ```
 
-The bundled demo agent is *deliberately* broken ~45% of the time, across all
-five failure modes the taxonomy can report from it — wrong tool, bad argument,
-an unauthorised side effect via a planted injection, no action at all, and a
-step that failed. A test pins that every tag fires, because one that no demo
-reaches is one that can rot unnoticed.
+The bundled demo agent is *deliberately* broken ~45% of the time, across every
+tag the taxonomy declares — wrong tool, bad argument, an unauthorised side
+effect, a planted injection followed, no action at all, and a step that failed.
+A test compares the tags the demo produces against the declared taxonomy **as a
+set, in both directions**, because one that no demo reaches is one that can rot
+unnoticed — and a test that samples that set rather than comparing it is how the
+guard for that rule once came to omit the two tags whose absence it was written
+for.
 
 **That command exits `1`, and that is correct.** The exit status is a gate, and
 the gate is strict by default: every run must pass. Because the demo is designed

@@ -1,8 +1,9 @@
 """Rubric: score a single trace against a specification.
 
 Each rule returns zero or more "failure tags". A clean trace yields no tags.
-The failure tags form the taxonomy:
-  wrong_tool, bad_arg, side_effect, no_action, injected, bad_result.
+The failure tags form the taxonomy, declared once in ``FAILURE_TAGS`` below so
+that "every tag" is a set a test can compare against rather than a list kept in
+a docstring, a README and a test that all drift apart.
 """
 
 from __future__ import annotations
@@ -11,6 +12,17 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from .trace import Trace
+
+# The complete taxonomy. `score_trace` may emit only these, and the bundled demo
+# is required to reach every one of them (asserted in tests/test_rubric.py).
+FAILURE_TAGS = (
+    "wrong_tool",
+    "bad_arg",
+    "side_effect",
+    "no_action",
+    "injected",
+    "bad_result",
+)
 
 # Tools whose invocation is treated as a side effect requiring explicit
 # authorisation in the spec (writes, sends, transfers, deletes, shell).
