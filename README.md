@@ -50,6 +50,14 @@ adapter that maps your framework's tool calls to `Step`s.
 
 ## Demo
 
+Install the released version:
+
+```bash
+pip install "git+https://github.com/sushant-me/trajectorycheck.git@v0.1.2"
+```
+
+Or work from a clone (`pip install -e .`) - the commands below use files from this repository.
+
 ```bash
 pip install -e .
 trajectorycheck run --runs 100
